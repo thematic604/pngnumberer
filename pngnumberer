@@ -1,0 +1,122 @@
+#!/bin/bash
+# pngnumberer 0.1
+# Adds a number rectangle on an image, like liveries
+#
+# Yes, it's a wrapper for ppmlabel and converters in netpbm.
+
+describen()
+{
+    echo ""
+    echo "Usage: pngnumberer [OPTION]... [FILE]..."
+    echo "-x value" 
+    echo "-y value" 
+    echo "-n number"
+    echo "In addition to the mandatory arguments, you may specify"
+    echo "-r for 180 degrees rotation."
+    echo ""
+    echo "A rectangle will be drawn at the position given"
+    echo "to an image specified. A new file will be created"
+    echo "by prepending 'number' and the given number to the name."
+    echo "The coordinates are for the bottom left corner of this rectangle."
+    exit 1
+}
+
+tmprm()
+{
+rm -f tmpnumbererbegin tmpnumbererp0 tmpnumbererp1 tmpnumbererp2 tmpnumbererp3 \
+tmpnumbererp4 tmpnumbererp5 tmpnumbererp6 tmpnumbererpf
+}
+
+let rotarg=0
+
+while getopts ":x:y:n:r" opt
+do
+    case "$opt" in
+        x ) xarg="$OPTARG" ;;
+        y ) yarg="$OPTARG" ;;
+        n ) narg="$OPTARG" ;;
+        r ) let rotarg=1 ;;
+        ? ) describen ;; # it's its turn
+    esac
+done
+
+shift $(($OPTIND - 1))
+
+case $# in
+(1) : OK;;
+(*) describen;;
+esac
+
+if [ -z "$xarg" ] || [ -z "$yarg" ] || [ -z "$narg" ]
+then
+    describen
+fi
+
+# Netpbm or no?
+echo "Checking for software..."
+which ppmlabel pngtopnm pnmtopng
+if [ -\? = 1 ]
+then
+    echo "Need pnmtopng pngtopnm ppmlabel."
+    exit 1
+fi
+
+farg=$1
+rotatev=0
+if [ "$rotarg" == "1" ]
+then
+    let rotatev=180
+fi
+
+if [[ "$farg" = */* ]]
+then
+    echo "Please, no directories."
+    exit 1
+fi
+
+if [[ "$farg" = *.png ]]
+then
+    if [ -e tmpnumbererbegin ] || [ -e tmpnumbererp* ]
+    then
+        echo "Not going to overwrite temporary file (tmpnum*)"
+        exit 1
+    else 
+        pngtopnm "$farg" > tmpnumbererbegin
+    fi
+else
+    echo "Error! If this is a PNG file, please rename it so it ends in .png"
+    exit 1
+fi
+
+newfn="$narg$farg"
+if [ -e "$newfn" ]
+then
+    echo "$newfn already exists, exiting."
+    tmprm
+    exit 1
+fi
+# if you need to change the size
+lsize=96
+let lsiz0=lsize-8
+let lsiz1=lsize-16
+
+ppmlabel -x "$xarg" -y "$yarg" -angle "$rotatev" -background black -colour black -size "$lsize" -text "$narg" tmpnumbererbegin > tmpnumbererp0
+let x01=xarg+8
+let y01=yarg-4
+ppmlabel -x "$x01" -y "$y01" -angle "$rotatev" -background white -colour white -size "$lsiz0" -text "$narg" tmpnumbererp0 > tmpnumbererp1
+let x01=xarg+20
+let y01=yarg-10
+ppmlabel -x "$x01" -y "$y01" -angle "$rotatev" -background white -colour black -size "$lsiz1" -text "$narg" tmpnumbererp1 > tmpnumbererp2
+let x01=xarg+21
+ppmlabel -x "$x01" -y "$y01" -angle "$rotatev" -background transparent -colour black -size "$lsiz1" -text "$narg" tmpnumbererp2 > tmpnumbererp3
+let x01=xarg+22
+ppmlabel -x "$x01" -y "$y01" -angle "$rotatev" -background transparent -colour black -size "$lsiz1" -text "$narg" tmpnumbererp3 > tmpnumbererp4
+let x01=xarg+23
+ppmlabel -x "$x01" -y "$y01" -angle "$rotatev" -background transparent -colour black -size "$lsiz1" -text "$narg" tmpnumbererp4 > tmpnumbererp5
+let x01=xarg+24
+ppmlabel -x "$x01" -y "$y01" -angle "$rotatev" -background transparent -colour black -size "$lsiz1" -text "$narg" tmpnumbererp5 > tmpnumbererp6
+let x01=xarg+25
+ppmlabel -x "$x01" -y "$y01" -angle "$rotatev" -background transparent -colour black -size "$lsiz1" -text "$narg" tmpnumbererp6 > tmpnumbererpf
+pnmtopng tmpnumbererpf >> "$newfn"
+echo "Numbered file is" "$newfn"
+tmprm

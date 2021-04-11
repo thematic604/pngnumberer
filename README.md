@@ -18,5 +18,6 @@ In addition to the mandatory arguments, you may specify
 A rectangle will be drawn at the position given
 and depicting NUM to an image FILE. 
 A new file will be created by prepending NUM to the name.
+Neither existing file will be modified.
 The coordinates are for the bottom left corner of this rectangle.
 
